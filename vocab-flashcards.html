@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Lexicon — Vocabulary Flashcards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#e6e9ee; --card:#ffffff; --card2:#f7f8fb;
+  --ink:#1b2130; --muted:#707a8a; --faint:#9aa3b2;
+  --line:#d3d9e2; --line2:#e4e8ee;
+  --accent:#2d5bd0; --accent-soft:#e7edfb;
+  --known:#1f9d63; --known-soft:#e2f4ea;
+  --learn:#c9880f; --learn-soft:#f8efd9;
+  --shadow:0 1px 2px rgba(20,30,50,.06),0 12px 34px rgba(20,30,50,.10);
+  --serif:'Fraunces',Georgia,serif;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+[data-theme="dark"]{
+  --paper:#12151c; --card:#1b2130; --card2:#20263a;
+  --ink:#e8ebf1; --muted:#8b95a7; --faint:#6a7486;
+  --line:#2a3140; --line2:#232a38;
+  --accent:#5b83e8; --accent-soft:#1e2740;
+  --known:#3ec483; --known-soft:#16321f;
+  --learn:#e0ad3a; --learn-soft:#33280f;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 40px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--paper); color:var(--ink); font-family:var(--sans);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  min-height:100dvh; display:flex; flex-direction:column;
+  transition:background .3s ease,color .3s ease;
+}
+button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit}
+:focus-visible{outline:2.5px solid var(--accent); outline-offset:3px; border-radius:6px}
+
+/* ---------- shell ---------- */
+.wrap{width:100%; max-width:720px; margin:0 auto; padding:20px 18px 40px; flex:1; display:flex; flex-direction:column}
+header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px}
+.brand{display:flex; align-items:baseline; gap:9px}
+.brand h1{font-family:var(--serif); font-weight:600; font-size:22px; letter-spacing:-.01em}
+.brand .dot{width:7px; height:7px; border-radius:50%; background:var(--accent); transform:translateY(-2px)}
+.brand .sub{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--faint)}
+.icons{display:flex; gap:4px}
+.iconbtn{width:38px; height:38px; border-radius:10px; display:grid; place-items:center; color:var(--muted); border:1px solid transparent; transition:.15s}
+.iconbtn:hover{background:var(--card); color:var(--ink); border-color:var(--line)}
+.iconbtn svg{width:19px; height:19px; stroke-width:1.8}
+.iconbtn.on{color:var(--accent); background:var(--accent-soft)}
+
+/* ---------- set tabs ---------- */
+.sets{display:flex; gap:6px; margin:16px 0 4px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none}
+.sets::-webkit-scrollbar{display:none}
+.set{flex:0 0 auto; padding:7px 13px; border-radius:999px; font-size:13px; font-weight:600; color:var(--muted); border:1px solid var(--line); background:var(--card); white-space:nowrap; transition:.15s}
+.set .n{font-family:var(--mono); font-size:10.5px; margin-left:5px; opacity:.7}
+.set:hover{color:var(--ink); border-color:var(--faint)}
+.set.active{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+[data-theme="dark"] .set.active{color:#0e1118}
+
+/* ---------- progress ---------- */
+.meter{margin:16px 2px 12px}
+.meter .row{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px}
+.meter .lead{font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.meter .lead b{color:var(--ink); font-weight:600}
+.legend{display:flex; gap:14px; font-family:var(--mono); font-size:11px; color:var(--muted)}
+.legend span{display:inline-flex; align-items:center; gap:5px}
+.legend i{width:8px; height:8px; border-radius:2px; display:inline-block}
+.bar{height:7px; border-radius:99px; background:var(--line2); overflow:hidden; display:flex}
+.bar .k{background:var(--known); height:100%; transition:width .4s cubic-bezier(.2,.8,.2,1)}
+.bar .l{background:var(--learn); height:100%; transition:width .4s cubic-bezier(.2,.8,.2,1)}
+
+/* ---------- study view ---------- */
+.stage{flex:1; display:flex; flex-direction:column; justify-content:center; min-height:340px; padding:8px 0}
+.scene{perspective:1600px; margin-bottom:22px}
+.card3d{position:relative; width:100%; min-height:288px; transform-style:preserve-3d; transition:transform .55s cubic-bezier(.2,.75,.2,1); cursor:pointer}
+.card3d.flipped{transform:rotateY(180deg)}
+.face{position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; background:var(--card); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); padding:32px 30px; display:flex; flex-direction:column}
+.face.back{transform:rotateY(180deg); background:var(--card2)}
+.card-top{display:flex; justify-content:space-between; align-items:center; font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint)}
+.card-top .tag{padding:3px 9px; border-radius:6px; background:var(--paper); color:var(--muted)}
+.card-mid{flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:14px}
+.word{font-family:var(--serif); font-weight:600; font-size:clamp(34px,9vw,58px); line-height:1.02; letter-spacing:-.02em}
+.def{font-size:clamp(17px,4.6vw,21px); line-height:1.48; color:var(--ink); max-width:34ch}
+.face.back .word{font-size:clamp(24px,6vw,34px); color:var(--muted); font-weight:500}
+.pos{font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent)}
+.card-hint{text-align:center; font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); display:flex; align-items:center; justify-content:center; gap:7px}
+.card-hint svg{width:14px; height:14px; stroke-width:1.8}
+.status-pill{font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:3px 9px; border-radius:6px}
+.status-pill.known{background:var(--known-soft); color:var(--known)}
+.status-pill.learn{background:var(--learn-soft); color:var(--learn)}
+
+/* ---------- controls ---------- */
+.judge{display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-bottom:12px}
+.judge button{padding:15px; border-radius:13px; font-size:14.5px; font-weight:600; border:1.5px solid var(--line); background:var(--card); display:flex; align-items:center; justify-content:center; gap:8px; transition:.15s}
+.judge button svg{width:18px; height:18px; stroke-width:2}
+.judge .learn:hover{border-color:var(--learn); color:var(--learn); background:var(--learn-soft)}
+.judge .known:hover{border-color:var(--known); color:var(--known); background:var(--known-soft)}
+.nav{display:flex; align-items:center; justify-content:center; gap:10px}
+.nav button{width:54px; height:50px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); display:grid; place-items:center; color:var(--muted); transition:.15s}
+.nav button:hover:not(:disabled){color:var(--ink); border-color:var(--faint)}
+.nav button:disabled{opacity:.35; cursor:not-allowed}
+.nav button svg{width:20px; height:20px; stroke-width:2}
+.nav .flip{flex:1; max-width:200px; height:50px; background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; font-size:14.5px; letter-spacing:.02em; gap:8px}
+.nav .flip:hover{filter:brightness(1.06)}
+.counter{text-align:center; font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:14px}
+.counter b{color:var(--ink)}
+
+/* ---------- empty ---------- */
+.empty{text-align:center; padding:60px 20px; color:var(--muted)}
+.empty .big{font-family:var(--serif); font-size:26px; color:var(--ink); margin-bottom:8px}
+.empty button{margin-top:16px; padding:11px 20px; border-radius:11px; border:1.5px solid var(--line); font-weight:600; color:var(--ink)}
+.empty button:hover{border-color:var(--accent); color:var(--accent)}
+
+/* ---------- browse view ---------- */
+.browse{display:none}
+.browse.show{display:block}
+.study.hide{display:none}
+.search{position:relative; margin:16px 0 14px}
+.search input{width:100%; padding:13px 15px 13px 42px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-size:15px; font-family:inherit}
+.search input::placeholder{color:var(--faint)}
+.search svg{position:absolute; left:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; stroke-width:1.9; color:var(--faint)}
+.list{display:flex; flex-direction:column; gap:9px}
+.entry{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:15px 16px; display:flex; gap:14px; align-items:flex-start; transition:.15s}
+.entry:hover{border-color:var(--faint)}
+.entry .mark{flex:0 0 auto; width:10px; height:10px; border-radius:50%; margin-top:7px; background:var(--line); cursor:pointer; transition:.15s}
+.entry .mark.known{background:var(--known)}
+.entry .mark.learn{background:var(--learn)}
+.entry .body{flex:1; min-width:0}
+.entry .hw{font-family:var(--serif); font-weight:600; font-size:19px; letter-spacing:-.01em; display:flex; align-items:baseline; gap:9px; flex-wrap:wrap}
+.entry .hw .st{font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); font-weight:400}
+.entry .dd{color:var(--muted); font-size:14.5px; line-height:1.45; margin-top:3px}
+.browse-meta{font-family:var(--mono); font-size:11px; color:var(--muted); margin:2px 2px 0; text-align:right}
+
+@media (max-width:480px){
+  .wrap{padding:16px 14px 32px}
+  .face{padding:26px 22px; border-radius:18px}
+  .nav button{width:48px}
+}
+@media (prefers-reduced-motion:reduce){
+  .card3d{transition:none}
+  .bar .k,.bar .l{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <span class="dot"></span>
+      <h1>Lexicon</h1>
+      <span class="sub" id="deck-sub">136 words</span>
+    </div>
+    <div class="icons">
+      <button class="iconbtn" id="reverse-btn" title="Reverse mode — see the definition, recall the word (R)" aria-label="Reverse mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3v5h-5M7 21v-5h5"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L3.51 8m0 0V3m0 5h5M3.51 15A9 9 0 0 0 18.36 18.36L20.49 16"/></svg>
+      </button>
+      <button class="iconbtn" id="shuffle-btn" title="Shuffle the deck (S)" aria-label="Shuffle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+      </button>
+      <button class="iconbtn" id="view-btn" title="Browse all words" aria-label="Browse list">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+      <button class="iconbtn" id="theme-btn" title="Light / dark" aria-label="Toggle theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" id="theme-icon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <nav class="sets" id="sets"></nav>
+
+  <div class="meter">
+    <div class="row">
+      <span class="lead"><b id="known-n">0</b> known &nbsp;·&nbsp; <b id="learn-n">0</b> learning &nbsp;·&nbsp; <b id="left-n">0</b> to go</span>
+      <span class="legend">
+        <span><i style="background:var(--known)"></i>known</span>
+        <span><i style="background:var(--learn)"></i>learning</span>
+      </span>
+    </div>
+    <div class="bar"><div class="k" id="bar-k" style="width:0"></div><div class="l" id="bar-l" style="width:0"></div></div>
+  </div>
+
+  <!-- STUDY -->
+  <section class="study" id="study">
+    <div class="stage" id="stage">
+      <div class="scene">
+        <div class="card3d" id="card" role="button" tabindex="0" aria-label="Flashcard — tap to flip">
+          <div class="face front">
+            <div class="card-top"><span class="tag" id="front-tag">Set 1</span><span id="front-status"></span></div>
+            <div class="card-mid"><div class="word" id="front-word">—</div></div>
+            <div class="card-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 3 0 0 0 18 0 9 3 0 0 0-18 0"/><path d="M3 12v6a9 3 0 0 0 18 0v-6"/></svg> tap to reveal</div>
+          </div>
+          <div class="face back">
+            <div class="card-top"><span class="tag" id="back-tag">definition</span><span id="back-status"></span></div>
+            <div class="card-mid">
+              <div class="word" id="back-word">—</div>
+              <div class="def" id="back-def">—</div>
+            </div>
+            <div class="card-hint">how well did you know it?</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="judge">
+        <button class="learn" id="btn-learn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          Still learning
+        </button>
+        <button class="known" id="btn-known">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>
+          Know it
+        </button>
+      </div>
+      <div class="nav">
+        <button id="prev" aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m15 18-6-6 6-6"/></svg></button>
+        <button class="flip" id="flip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3v5h-5M7 21v-5h5"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L3.51 8M3.51 15A9 9 0 0 0 18.36 18.36L20.49 16"/></svg>
+          Flip
+        </button>
+        <button id="next" aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 18 6-6-6-6"/></svg></button>
+      </div>
+      <div class="counter"><b id="pos">1</b> / <span id="total">136</span></div>
+    </div>
+
+    <div class="empty" id="empty" style="display:none">
+      <div class="big">Nothing here yet</div>
+      <div>No cards match this filter.</div>
+      <button id="empty-reset">Show all words</button>
+    </div>
+  </section>
+
+  <!-- BROWSE -->
+  <section class="browse" id="browse">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search-in" type="text" placeholder="Search words or definitions…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="browse-meta" id="browse-count"></div>
+    <div class="list" id="list"></div>
+  </section>
+</div>
+
+<script>
+/* ---------------- data ---------------- */
+const RAW = [
+["advocate","to publicly support or recommend",1],
+["prohibitive","forbidding or restricting something; excessively high or difficult to pay",1],
+["allude","to suggest or call attention to",1],
+["analogous","comparable in certain respects, typically in a way which makes clearer the nature of the things compared",1],
+["tranquil","free from disturbance; calm",1],
+["anecdote","a short amusing or interesting story about a real incident or person",1],
+["relevant","closely connected or appropriate to what is being done or considered",1],
+["outsized","larger, greater, or more significant than what is considered typical",1],
+["apprehensive","anxious or fearful that something bad or unpleasant will happen",1],
+["unattainable","not able to be reached or achieved",1],
+["arbitrary","based on random choice or personal whim, rather than any reason or system",1],
+["lineage","descent from an ancestor",1],
+["assert","to state a fact or belief confidently or forcefully",1],
+["bias","prejudice in favor of or against one thing, group, or person compared with another",1],
+["concede","to admit that something is true or valid after first denying or resisting it",1],
+["coarseness","the quality of being rough or harsh",1],
+["validate","to check or prove the accuracy or validity of something",1],
+["corroborate","to confirm or give support to",1],
+["substantiate","to provide evidence to support or prove the truth of",1],
+["underscore","to emphasize or draw attention to",1],
+["undermine","to lessen the effectiveness, power, or ability of",1],
+["consensus","a general agreement",1],
+["decisive","settling an issue; producing a definite result",1],
+["eloquent","fluent or persuasive in speaking or writing",1],
+["exert","to make a physical or mental effort",1],
+["dispute","a disagreement, argument, or debate",1],
+["denounce","to publicly declare to be wrong or evil",1],
+["skeptical","not easily convinced; having doubts or reservations",1],
+["provoke","to stimulate or give rise to a reaction or emotion, typically a strong or unwelcome one in someone",1],
+["overlook","to miss or fail to notice something",1],
+["repression","the restraint, prevention, or inhibition of a feeling or quality",1],
+["speculate","to form a theory or conjecture about a subject without firm evidence",1],
+["subtle","so delicate or precise as to be difficult to analyze or describe",1],
+["retain","to continue to have; keep possession of",1],
+["degrade","to treat or regard someone with contempt or disrespect",1],
+["divergent","tending to be different or develop in different directions",1],
+["explicit","stated clearly and in detail, leaving no room for confusion or doubt",1],
+["imminent","about to happen",1],
+["counteract","to oppose or neutralize the effects of something by taking contrary or opposing actions; to offset or balance out",1],
+["impede","to delay or prevent someone or something by obstructing",1],
+["prominent","important; famous",1],
+["reciprocate","to respond to a gesture or action by making a corresponding one",1],
+["refute","to prove a statement or theory to be wrong or false",1],
+["prevalent","common",1],
+["abundant","existing or available in large quantities; plentiful",2],
+["pervasive","existing or spreading through every part of something",2],
+["adhere","to believe in and follow the practices of",2],
+["precursor","a person or thing that comes before another of the same kind",2],
+["accentuate","make more noticeable or prominent",2],
+["oppressive","unjustly inflicting hardship and constraint",3],
+["novel","new or unusual in an interesting way",3],
+["inevitable","certain to happen; unavoidable",3],
+["obscure","to make unclear, uncertain, or difficult to understand",3],
+["conventional","ordinary or commonplace",3],
+["detractor","a person who tries to take away from the quality, value, or reputation of something or someone",3],
+["dispersed","spread widely",3],
+["elicit","to evoke or draw out a response, answer, or fact from someone in reaction to one's own actions or questions",3],
+["catalyze","to bring about a chemical reaction; to bring about or inspire",3],
+["evade","to escape or slip away",3],
+["exploit","to make full use of and derive benefit from; to treat someone unfairly in order to make money or gain an advantage",3],
+["sporadic","occurring at irregular intervals or only in a few places",3],
+["momentous","of great importance or significance, especially in having a bearing on future events",3],
+["pristine","clean and fresh as if new; spotless",3],
+["constrict","to make narrower or tighten",3],
+["ecology","study of the natural world",3],
+["entomology","study of insects",3],
+["genetics","study of genes",3],
+["ornithology","study of birds",3],
+["paleontology","study of fossils",3],
+["zoology","study of animals",3],
+["astronomy","study of stars and planets",3],
+["botany","study of plants",3],
+["neuroscience","science of the brain",3],
+["geology","study of rocks",3],
+["anthropology","study of human behavior and social organization",3],
+["archaeology","study of historical human activity through the excavation of physical objects",3],
+["economics","study of monetary systems",3],
+["ethnography","study of individual cultures",3],
+["folklore","study of traditional stories and myths",3],
+["sociology","study of everyday human social behaviors and interactions",3],
+["empirical","relying on hard data",3],
+["hierarchy","system of rank",3],
+["indigenous","native",3],
+["inhibit","prevent or impede",3],
+["pigment","color",3],
+["predisposed","having a tendency toward",3],
+["equitable","fair and just; treating everyone equally",3],
+["regenerate","regrow",3],
+["stimulus","something that provokes a specific response",3],
+["indulgent","having or indicating a tendency to be overly generous",3],
+["feasible","possible",3],
+["oblivious","unaware",3],
+["absolve","to clear of wrongdoing; pardon",4],
+["behold","to see or observe something, often with a sense of wonder",4],
+["acclaim","to praise openly",4],
+["rectify","to correct or make right",4],
+["chastise","to criticize severely",4],
+["satiate","to satisfy",4],
+["adversary","opponent",4],
+["align","to support or adopt the position of",4],
+["comprehensive","complete",4],
+["strenuous","requiring great effort or energy",4],
+["contingent","dependent upon",4],
+["rudimentary","very basic",4],
+["badger","to pester or annoy",4],
+["imposing","having a striking appearance or commanding presence",4],
+["deplete","to decrease the supply of",4],
+["adverse","unfavorable, unlucky, harmful",4],
+["ominous","menacing, threatening",4],
+["perpetuate","to continue; to keep from dying out",4],
+["erratic","unpredictable",4],
+["manifestations","visible or evident signs or expressions of something",4],
+["depict","to draw or portray",4],
+["exacerbate","to make worse; to aggravate",4],
+["expedite","to speed up",4],
+["monetize","to make money from something",4],
+["foreboding","an ominous foretelling",4],
+["aversion","intense dislike; revulsion",4],
+["sedentary","passive or inactive",4],
+["occupy","to take possession of a place or thing",4],
+["palatable","acceptable to the mind or senses",4],
+["credible","believable",4],
+["inconsequential","lacking importance or significance; trivial, unimportant",4],
+["convene","to come together for a meeting or assembly",4],
+["opulent","extremely wealthy; extravagant",4],
+["livid","extremely angry",4],
+["yield","to produce or provide",4],
+["callous","insensitive",4],
+["inherent","inborn or naturally occurring in something",4],
+["marginal","unimportant",4],
+["debilitate","to make weak or feeble",4],
+["debase","to lower in value",4],
+["defunct","no longer in existence or use",4],
+["articulate","well spoken",4],
+["alleviate","to relieve or make more bearable",4],
+["unyielding","not giving in",4],
+].map(([w,d,s])=>({w,d,s}));
+
+/* ---------------- persistence (safe) ---------------- */
+const KEY="lexicon.v1";
+let store={status:{}}; // status[word] = 'known' | 'learning'
+try{ const raw=localStorage.getItem(KEY); if(raw) store=JSON.parse(raw); }catch(e){}
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} }
+
+/* ---------------- state ---------------- */
+let setFilter=0;            // 0=all, 1..4
+let order=[];               // indices into RAW for current deck
+let pos=0;
+let flipped=false;
+let reverse=false;
+let view="study";
+
+/* ---------------- helpers ---------------- */
+const $=id=>document.getElementById(id);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function inSet(i){return setFilter===0||RAW[i].s===setFilter;}
+
+function buildOrder(keepWord){
+  const keep=keepWord||(order.length?RAW[order[pos]].w:null);
+  order=RAW.map((_,i)=>i).filter(inSet);
+  const at=order.findIndex(i=>RAW[i].w===keep);
+  pos = at>=0 ? at : 0;
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  renderSets(); renderMeter();
+  if(view==="browse"){ renderList(); return; }
+  const has=order.length>0;
+  $("stage").style.display=has?"flex":"none";
+  $("empty").style.display=has?"none":"block";
+  if(!has) return;
+
+  const item=RAW[order[pos]];
+  const st=store.status[item.w];
+  flipped=false; $("card").classList.remove("flipped");
+
+  // front / back depend on reverse mode
+  const frontMain = reverse ? item.d : item.w;
+  const backWord  = item.w;
+  const backDef   = item.d;
+
+  $("front-word").textContent=frontMain;
+  $("front-word").className = reverse ? "def" : "word";
+  $("front-tag").textContent = reverse ? "definition" : ("Set "+item.s);
+  $("back-word").textContent=backWord;
+  $("back-def").textContent=backDef;
+  $("back-def").style.display = reverse ? "none":"block";
+  $("back-word").className = reverse ? "word" : "word";
+  if(reverse){ $("back-tag").textContent="the word"; }
+  else{ $("back-tag").textContent="definition"; }
+
+  const pill = st ? `<span class="status-pill ${st==='known'?'known':'learn'}">${st==='known'?'known':'learning'}</span>` : "";
+  $("front-status").innerHTML=pill;
+  $("back-status").innerHTML=pill;
+
+  $("pos").textContent=pos+1;
+  $("total").textContent=order.length;
+  $("prev").disabled=pos===0;
+  $("next").disabled=pos===order.length-1;
+}
+
+function renderSets(){
+  const counts={0:RAW.length,1:0,2:0,3:0,4:0};
+  RAW.forEach(r=>counts[r.s]++);
+  const labels={0:"All",1:"Set 1",2:"Set 2",3:"Set 3",4:"Set 4"};
+  $("sets").innerHTML=[0,1,2,3,4].map(s=>
+    `<button class="set ${s===setFilter?'active':''}" data-set="${s}">${labels[s]}<span class="n">${counts[s]}</span></button>`
+  ).join("");
+  $("deck-sub").textContent = (setFilter===0?RAW.length:counts[setFilter])+" words";
+  document.querySelectorAll(".set").forEach(b=>b.onclick=()=>{
+    setFilter=+b.dataset.set; buildOrder(); render();
+  });
+}
+
+function renderMeter(){
+  const pool=RAW.filter((_,i)=>inSet(i));
+  const total=pool.length;
+  const known=pool.filter(r=>store.status[r.w]==="known").length;
+  const learn=pool.filter(r=>store.status[r.w]==="learning").length;
+  $("known-n").textContent=known;
+  $("learn-n").textContent=learn;
+  $("left-n").textContent=total-known-learn;
+  $("bar-k").style.width=(total?known/total*100:0)+"%";
+  $("bar-l").style.width=(total?learn/total*100:0)+"%";
+}
+
+/* ---------------- actions ---------------- */
+function doFlip(){ flipped=!flipped; $("card").classList.toggle("flipped",flipped); }
+function go(d){
+  const n=pos+d;
+  if(n<0||n>=order.length) return;
+  pos=n; render();
+}
+function mark(status){
+  if(!order.length) return;
+  const w=RAW[order[pos]].w;
+  store.status[w] = (store.status[w]===status) ? undefined : status;
+  if(store.status[w]===undefined) delete store.status[w];
+  save();
+  // auto-advance if not last
+  if(pos<order.length-1){ pos++; render(); }
+  else render();
+}
+
+/* ---------------- browse ---------------- */
+function renderList(){
+  const q=$("search-in").value.trim().toLowerCase();
+  const rows=RAW.filter((r,i)=>inSet(i))
+    .filter(r=> !q || r.w.toLowerCase().includes(q) || r.d.toLowerCase().includes(q))
+    .sort((a,b)=>a.w.localeCompare(b.w));
+  $("browse-count").textContent=rows.length+" of "+RAW.filter((_,i)=>inSet(i)).length+" shown";
+  $("list").innerHTML=rows.map(r=>{
+    const st=store.status[r.w]||"";
+    const stLabel=st?`<span class="st">${st}</span>`:"";
+    return `<div class="entry">
+      <div class="mark ${st}" data-w="${r.w}" title="cycle status"></div>
+      <div class="body"><div class="hw">${r.w} <span class="st" style="opacity:.6">Set ${r.s}</span> ${stLabel}</div>
+      <div class="dd">${r.d}</div></div></div>`;
+  }).join("");
+  document.querySelectorAll(".entry .mark").forEach(m=>m.onclick=()=>{
+    const w=m.dataset.w; const cur=store.status[w];
+    const nextS = cur==="known" ? "learning" : cur==="learning" ? undefined : "known";
+    if(nextS) store.status[w]=nextS; else delete store.status[w];
+    save(); renderList(); renderMeter();
+  });
+}
+
+/* ---------------- view switch ---------------- */
+function setView(v){
+  view=v;
+  $("study").classList.toggle("hide",v==="browse");
+  $("browse").classList.toggle("show",v==="browse");
+  $("view-btn").classList.toggle("on",v==="browse");
+  if(v==="browse") renderList(); else { buildOrder(); render(); }
+}
+
+/* ---------------- wire up ---------------- */
+$("card").onclick=doFlip;
+$("card").onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();doFlip();}};
+$("flip").onclick=doFlip;
+$("prev").onclick=()=>go(-1);
+$("next").onclick=()=>go(1);
+$("btn-known").onclick=()=>mark("known");
+$("btn-learn").onclick=()=>mark("learning");
+$("empty-reset").onclick=()=>{setFilter=0;buildOrder();render();};
+
+$("shuffle-btn").onclick=()=>{
+  const keep=order.length?RAW[order[pos]].w:null;
+  order=RAW.map((_,i)=>i).filter(inSet); shuffle(order); pos=0; render();
+};
+$("reverse-btn").onclick=()=>{
+  reverse=!reverse; $("reverse-btn").classList.toggle("on",reverse); render();
+};
+$("view-btn").onclick=()=>setView(view==="study"?"browse":"study");
+$("search-in").oninput=renderList;
+
+/* theme */
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme",t);
+  $("theme-icon").innerHTML = t==="dark"
+    ? '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>'
+    : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  try{localStorage.setItem(KEY+".theme",t);}catch(e){}
+}
+let theme="light";
+try{theme=localStorage.getItem(KEY+".theme")|| (matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");}catch(e){}
+applyTheme(theme);
+$("theme-btn").onclick=()=>{theme=theme==="dark"?"light":"dark";applyTheme(theme);};
+
+/* keyboard */
+document.addEventListener("keydown",e=>{
+  if(view==="browse"||e.target.tagName==="INPUT") return;
+  if(e.key===" "){e.preventDefault();doFlip();}
+  else if(e.key==="ArrowRight")go(1);
+  else if(e.key==="ArrowLeft")go(-1);
+  else if(e.key==="1")mark("learning");
+  else if(e.key==="2")mark("known");
+  else if(e.key.toLowerCase()==="r"){reverse=!reverse;$("reverse-btn").classList.toggle("on",reverse);render();}
+  else if(e.key.toLowerCase()==="s"){$("shuffle-btn").click();}
+});
+
+/* boot */
+buildOrder();
+render();
+</script>
+</body>
+</html>
